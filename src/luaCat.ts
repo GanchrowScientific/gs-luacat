@@ -6,10 +6,10 @@ import * as path from 'path';
 
 import {PrivateEventEmitter} from 'gs-utils/lib/privateEventEmitter';
 
-import {DEFAULT_MODULE_PREFIX} from './defaultModulePrefix';
+import {ModuleWrapper} from './moduleWrapper';
 
 export const enum CONCAT_STYLE {
-  deploy,
+  deploy = 1,
   auxiliary,
   entry,
   unit
@@ -19,19 +19,18 @@ export interface LuaScriptConcatOptions {
   inFile: string;
   concatStyle: CONCAT_STYLE;
   outFile?: string;
-  modulePrefix?: (...args) => string;
+  moduleWrapper?: ModuleWrapper;
 }
 
 export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatOptions> extends PrivateEventEmitter {
   private inFile: string;
   private curDir: string;
   private inDir: string;
-  private modulePrefix: (...args) => string;
+  private moduleWrapper: ModuleWrapper;
   private originalScript: string;
   private outFile: string;
   private concatStyle: CONCAT_STYLE;
   private includedFiles: Set<string>;
-  private needsTestFlag: boolean;
 
   private currentScript: string[] = [];
   private finishedScript = '';
@@ -39,10 +38,9 @@ export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatO
   constructor(config: C, includedFiles = new Set()) {
     super();
     this.curDir = process.cwd();
-    this.inFile = path.resolve(config.inFile);
+    this.inFile = config.inFile;
     this.inDir = path.dirname(this.inFile);
-    this.modulePrefix = config.modulePrefix || DEFAULT_MODULE_PREFIX;
-
+    this.moduleWrapper = config.moduleWrapper || new ModuleWrapper();
     process.chdir(this.inDir);
     this.originalScript = fs.readFileSync(this.inFile, 'utf8');
     this.outFile = config.outFile;
@@ -53,7 +51,7 @@ export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatO
   public concat() {
     this.currentScript = [];
     if (this.concatStyle === CONCAT_STYLE.deploy || this.concatStyle === CONCAT_STYLE.unit) {
-      this.currentScript.push(this.modulePrefix(this.inDir));
+      this.currentScript.push(this.moduleWrapper.header(this.inDir));
     }
     let scriptByLines = this.originalScript.split('\n');
     let includes = scriptByLines.filter(this.isInclude).map(this.getIncluded);
@@ -61,8 +59,9 @@ export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatO
       if (!this.includedFiles.has(include)) {
         this.includedFiles.add(include);
         let luaScriptConcat = new LuaScriptConcat({
-          inFile: path.normalize(this.inDir + '/../../' + include),
-          concatStyle: CONCAT_STYLE.auxiliary
+          inFile: path.normalize(`${this.inDir}/${include}`),
+          concatStyle: CONCAT_STYLE.auxiliary,
+          moduleWrapper: this.moduleWrapper
         }, this.includedFiles);
         this.currentScript.push(luaScriptConcat.concat());
         luaScriptConcat.finish();
@@ -71,7 +70,7 @@ export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatO
 
     if (this.concatStyle === CONCAT_STYLE.auxiliary) {
       this.currentScript.push(`-- including file ${path.basename(this.inFile)}`);
-      this.currentScript.push(`registerModule('${this.moduleName}', function()`);
+      this.currentScript.push(this.moduleWrapper.wrapAuxillary(this.moduleName));
     } else {
       this.currentScript.push('-- Including target module');
     }
@@ -80,9 +79,7 @@ export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatO
     let inMainOnlySection = false;
     let inAuxiliaryOnlySection = false;
     scriptByLines.forEach(ifile => {
-      if (this.needsTest(ifile)) {
-        this.needsTestFlag = true;
-      } else if (this.isIgnoreBegin(ifile)) {
+      if (this.isIgnoreBegin(ifile)) {
         ignoring = true;
       } else if (this.isIgnoreEnd(ifile)) {
         ignoring = false;
@@ -106,7 +103,7 @@ export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatO
     });
 
     if (this.concatStyle === CONCAT_STYLE.auxiliary) {
-      this.currentScript.push('\nend)\n');
+      this.currentScript.push(this.moduleWrapper.close());
     }
     return (this.finishedScript = this.currentScript.join('\n'));
   }
@@ -135,7 +132,7 @@ export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatO
 
 
   private writeUnit() {
-    if (this.needsTestFlag && this.concatStyle === CONCAT_STYLE.unit) {
+    if (this.concatStyle === CONCAT_STYLE.unit) {
       fs.writeFileSync(this.outFile, this.finishedScript);
     }
   }
@@ -146,12 +143,12 @@ export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatO
     }
   }
 
-  private needsTest(data) {
-    return /^\-\- !test/.test(data);
-  }
-
   private getIncluded(data) {
-    return /require\('(.*)'\)/.exec(data)[1] + '.lua';
+    let included = /require\('(.*)'\)/.exec(data)[1];
+    if (/\.lua$/.test(included)) {
+      return included;
+    }
+    return `${included}.lua`;
   }
 
   private isInclude(data) {
@@ -187,14 +184,23 @@ export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatO
   }
 }
 
-export function concatDirectory(inDir: string, outDir: string, type: CONCAT_STYLE, entryScript = '') {
+export function concatDirectory(opts: {
+  inDir: string,
+  outDir: string,
+  type?: CONCAT_STYLE,
+  entryScript?: string,
+  moduleWrapper?: ModuleWrapper
+}) {
+  let {inDir, outDir, type, entryScript, moduleWrapper} = opts;
   let files = fs.readdirSync(inDir);
+  mkDirP(outDir);
   files.filter(f => /\.lua$/.test(f)).forEach(luaLib => {
     let testScript = new LuaScriptConcat(
       {
         inFile: `${inDir}/${luaLib}`,
-        outFile: outDir,
-        concatStyle: type
+        outFile: `${outDir}/${luaLib}`,
+        concatStyle: type || CONCAT_STYLE.unit,
+        moduleWrapper
       }
     );
     testScript.concat();
@@ -202,12 +208,27 @@ export function concatDirectory(inDir: string, outDir: string, type: CONCAT_STYL
   });
 }
 
-export function createEntryScript(entryTarget = 'main.lua') {
+export function createEntryScript(opts: {
+  entryTarget: string,
+  moduleWrapper?: ModuleWrapper
+}) {
+  let {entryTarget, moduleWrapper} = opts;
+  entryTarget = entryTarget || 'main.lua';
   let luaScriptConcat = new LuaScriptConcat({
     inFile: `${__dirname}/../${entryTarget}`,
-    concatStyle: CONCAT_STYLE.entry
+    concatStyle: CONCAT_STYLE.entry,
+    moduleWrapper
   });
   let script = luaScriptConcat.concat();
   luaScriptConcat.finish();
   return script;
+}
+
+function mkDirP(...args) {
+  args.forEach(arg => {
+    let toCreate = path.isAbsolute(arg) ? arg : `${__dirname}/../${arg}`;
+    if (!fs.existsSync(toCreate)) {
+      fs.mkdirSync(toCreate);
+    }
+  });
 }
