@@ -18,7 +18,7 @@
     "clean": "rm -rf target lib"
   },
   "bin": { 
-    "luacat": "./luaCat.js"
+    "luacat": "./luacat.js"
   },
   "devDependencies": {
     "@types/node": "8.0.53",
