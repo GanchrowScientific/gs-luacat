@@ -2,7 +2,7 @@
   "name": "gs-luacat",
   "description": "Concatenate lua scripts (For Redis?).",
   "repository": "http://gerrit.ganchrow.com:8080/gs-luacat",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "dependencies": {
@@ -16,6 +16,9 @@
     "prepare": "scripts/post-install.sh",
     "test": "scripts/test.sh",
     "clean": "rm -rf target lib"
+  },
+  "bin": { 
+    "luacat": "./luaCat.js"
   },
   "devDependencies": {
     "@types/node": "8.0.53",
