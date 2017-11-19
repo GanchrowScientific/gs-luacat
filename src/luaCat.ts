@@ -215,7 +215,7 @@ export function createEntryScript(opts: {
   let {entryTarget, moduleWrapper} = opts;
   entryTarget = entryTarget || 'main.lua';
   let luaScriptConcat = new LuaScriptConcat({
-    inFile: `${__dirname}/../${entryTarget}`,
+    inFile: entryTarget,
     concatStyle: CONCAT_STYLE.entry,
     moduleWrapper
   });
@@ -226,7 +226,7 @@ export function createEntryScript(opts: {
 
 function mkDirP(...args) {
   args.forEach(arg => {
-    let toCreate = path.isAbsolute(arg) ? arg : `${__dirname}/../${arg}`;
+    let toCreate = path.isAbsolute(arg) ? arg : arg;
     if (!fs.existsSync(toCreate)) {
       fs.mkdirSync(toCreate);
     }
