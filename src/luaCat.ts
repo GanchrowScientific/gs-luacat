@@ -8,7 +8,7 @@ import {PrivateEventEmitter} from 'gs-utils/lib/privateEventEmitter';
 
 import {ModuleWrapper} from './moduleWrapper';
 
-export const enum CONCAT_STYLE {
+export enum CONCAT_STYLE {
   deploy = 1,
   auxiliary,
   entry,
