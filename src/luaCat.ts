@@ -121,7 +121,7 @@ export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatO
     let dotIndex = fileName.indexOf('.');
     fileName = fileName.substring(0, dotIndex);
     let moduleDir = segments.slice(-3, -1);
-    return `./${moduleDir[0]}/${moduleDir[1]}/${fileName}`;
+    return `${moduleDir[1]}/${fileName}`;
   }
 
   private reset() { /**/ }

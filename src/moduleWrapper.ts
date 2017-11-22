@@ -5,10 +5,9 @@ const DEFAULT_AUXILLARY_CLOSE = '\nend)\n';
 
 const DEFAULT_AUXILLARY_FUNCTION = (moduleName: string) => `registerModule('${moduleName}', function()`;
 
-const DEFAULT_MODULE_PREFIX = (basePath: string) => {
-  return `
+export const DEFAULT_MODULE_PREFIX =
+`
 -- Module Wrapper
--- Copyright © 2017 Ganchrow Scientific, SA all rights reserved
 local modules = {}
 
 local function resolvePath(path)
@@ -27,11 +26,10 @@ local function require(path)
 end
 -- End Module Wrapper
 `;
-};
 
 export class ModuleWrapper {
   constructor(
-    private prefix = DEFAULT_MODULE_PREFIX,
+    private prefix = (basePath: string) => DEFAULT_MODULE_PREFIX,
     private auxillaryFunction = DEFAULT_AUXILLARY_FUNCTION,
     private auxillaryClose = DEFAULT_AUXILLARY_CLOSE
   ) { /**/ }
