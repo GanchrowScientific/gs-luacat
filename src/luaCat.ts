@@ -59,7 +59,7 @@ export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatO
       if (!this.includedFiles.has(include)) {
         this.includedFiles.add(include);
         let luaScriptConcat = new LuaScriptConcat({
-          inFile: path.normalize(`${this.inDir}/${include}`),
+          inFile: `${this.inDir}/${path.normalize(include)}`,
           concatStyle: CONCAT_STYLE.auxiliary,
           moduleWrapper: this.moduleWrapper
         }, this.includedFiles);
