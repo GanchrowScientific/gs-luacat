@@ -30,7 +30,7 @@ module.exports = {
       '  local foo = \'hey\'',
       '',
       '-- Including target module',
-      'require(\'./b.lua\')',
+      `require(\'${__dirname}/resources/./b.lua\')`,
       'local function test(hey)',
       '  return hey',
       'end'

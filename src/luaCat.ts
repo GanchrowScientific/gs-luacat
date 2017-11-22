@@ -52,50 +52,35 @@ export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatO
       this.currentScript.push(this.moduleWrapper.header(this.inDir));
     }
     let scriptByLines = this.originalScript.split('\n');
-    let includes = scriptByLines.filter(this.isInclude).map(this.getIncluded);
-    includes.forEach(include => {
-      if (!this.includedFiles.has(include)) {
-        this.includedFiles.add(include);
-        let luaScriptConcat = new LuaScriptConcat({
-          inFile: `${this.inDir}/${path.normalize(include)}`,
-          concatStyle: CONCAT_STYLE.auxiliary,
-          moduleWrapper: this.moduleWrapper
-        }, this.includedFiles);
-        this.currentScript.push(luaScriptConcat.concat());
-        luaScriptConcat.finish();
-      }
-    });
-
-    if (this.concatStyle === CONCAT_STYLE.auxiliary) {
-      this.currentScript.push(`-- including file ${path.basename(this.inFile)}`);
-      this.currentScript.push(this.moduleWrapper.wrapAuxillary(this.moduleName));
-    } else {
-      this.currentScript.push('-- Including target module');
-    }
+    this.includeRequiredFiles(scriptByLines.filter(this.isInclude).map(this.getIncluded));
+    this.includeAuxillaryHeader();
 
     let ignoring = false;
     let inMainOnlySection = false;
     let inAuxiliaryOnlySection = false;
-    scriptByLines.forEach(ifile => {
-      if (this.isIgnoreBegin(ifile)) {
+    scriptByLines.forEach(line => {
+      if (this.isInclude(line)) {
+        line = line.replace(/require\('(.*)'\)/, `require('${path.normalize(this.inDir)}/$1')`);
+      }
+      if (this.isIgnoreBegin(line)) {
         ignoring = true;
-      } else if (this.isIgnoreEnd(ifile)) {
+      } else if (this.isIgnoreEnd(line)) {
         ignoring = false;
-      } else if (this.isMainBegin(ifile)) {
+      } else if (this.isMainBegin(line)) {
         inMainOnlySection = true;
-      } else if (this.isMainEnd(ifile)) {
+      } else if (this.isMainEnd(line)) {
         inMainOnlySection = false;
-      } else if (this.isAuxiliaryBegin(ifile)) {
+      } else if (this.isAuxiliaryBegin(line)) {
         inAuxiliaryOnlySection = true;
-      } else if (this.isAuxiliaryEnd(ifile)) {
+      } else if (this.isAuxiliaryEnd(line)) {
         inAuxiliaryOnlySection = false;
       } else {
         // hides aux sections when in a main file and main sections when in an aux file
         let showSection = (!inAuxiliaryOnlySection && !inMainOnlySection) ||
                           (inAuxiliaryOnlySection && this.concatStyle !== CONCAT_STYLE.deploy) ||
                           (inMainOnlySection && this.concatStyle === CONCAT_STYLE.deploy);
-        if (ifile && !this.isComment(ifile) && !ignoring && showSection) {
-          this.currentScript.push((this.concatStyle === CONCAT_STYLE.auxiliary ? '  ' : '') + ifile);
+        if (line && !this.isComment(line) && !ignoring && showSection) {
+          this.currentScript.push((this.concatStyle === CONCAT_STYLE.auxiliary ? '  ' : '') + line);
         }
       }
     });
@@ -113,18 +98,34 @@ export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatO
   }
 
   private get moduleName() {
-    // returns the last 2 path segments with the file name and no extention
-    // so, converts the inFile to something that looks like what the require
-    // statement looks like
-    let segments = this.inFile.split('/');
-    let fileName = segments[segments.length - 1];
-    let dotIndex = fileName.indexOf('.');
-    fileName = fileName.substring(0, dotIndex);
-    let moduleDir = segments.slice(-3, -1);
-    return `${moduleDir[1]}/${fileName}`;
+    return path.normalize(this.inFile);
   }
 
   private reset() { /**/ }
+
+  private includeAuxillaryHeader() {
+    if (this.concatStyle === CONCAT_STYLE.auxiliary) {
+      this.currentScript.push(`-- including file ${path.basename(this.inFile)}`);
+      this.currentScript.push(this.moduleWrapper.wrapAuxillary(this.moduleName));
+    } else {
+      this.currentScript.push('-- Including target module');
+    }
+  }
+
+  private includeRequiredFiles(includes: string[]) {
+    includes.map(include => path.normalize(`${this.inDir}/${include}`)).forEach(include => {
+      if (!this.includedFiles.has(include)) {
+        this.includedFiles.add(include);
+        let luaScriptConcat = new LuaScriptConcat({
+          inFile: include,
+          concatStyle: CONCAT_STYLE.auxiliary,
+          moduleWrapper: this.moduleWrapper
+        }, this.includedFiles);
+        this.currentScript.push(luaScriptConcat.concat());
+        luaScriptConcat.finish();
+      }
+    });
+  }
 
   private writeUnit() {
     if (this.concatStyle === CONCAT_STYLE.unit) {
@@ -138,44 +139,44 @@ export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatO
     }
   }
 
-  private getIncluded(data) {
-    let included = /require\('(.*)'\)/.exec(data)[1];
+  private getIncluded(line) {
+    let included = /require\('(.*)'\)/.exec(line)[1];
     if (/\.lua$/.test(included)) {
       return included;
     }
     return `${included}.lua`;
   }
 
-  private isInclude(data) {
-    return /require\('(.*)'\)/.test(data);
+  private isInclude(line) {
+    return /require\('(.*)'\)/.test(line);
   }
 
-  private isComment(data) {
-    return /^\-\-/.test(data);
+  private isComment(line) {
+    return /^\-\-/.test(line);
   }
 
-  private isIgnoreBegin(data) {
-    return /^\-\- BEGIN IGNORE/.test(data);
+  private isIgnoreBegin(line) {
+    return /^\-\- BEGIN IGNORE/.test(line);
   }
 
-  private isIgnoreEnd(data) {
-    return /^\-\- END IGNORE/.test(data);
+  private isIgnoreEnd(line) {
+    return /^\-\- END IGNORE/.test(line);
   }
 
-  private isMainBegin(data) {
-    return /^\-\- BEGIN MAIN/.test(data);
+  private isMainBegin(line) {
+    return /^\-\- BEGIN MAIN/.test(line);
   }
 
-  private isMainEnd(data) {
-    return /^\-\- END MAIN/.test(data);
+  private isMainEnd(line) {
+    return /^\-\- END MAIN/.test(line);
   }
 
-  private isAuxiliaryBegin(data) {
-    return /^\-\- BEGIN AUXILIARY/.test(data);
+  private isAuxiliaryBegin(line) {
+    return /^\-\- BEGIN AUXILIARY/.test(line);
   }
 
-  private isAuxiliaryEnd(data) {
-    return /^\-\- END AUXILIARY/.test(data);
+  private isAuxiliaryEnd(line) {
+    return /^\-\- END AUXILIARY/.test(line);
   }
 }
 
