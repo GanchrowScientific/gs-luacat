@@ -3,6 +3,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import * as mkdirp from 'mkdirp';
 
 import {PrivateEventEmitter} from 'gs-utils/lib/privateEventEmitter';
 
@@ -187,7 +188,7 @@ export function concatDirectory(opts: {
 }) {
   let {inDir, outDir, type, entryScript, moduleWrapper} = opts;
   let files = fs.readdirSync(inDir);
-  mkDirP(outDir);
+  mkdirp.sync(outDir);
   files.filter(f => /\.lua$/.test(f)).forEach(luaLib => {
     let testScript = new LuaScriptConcat(
       {
@@ -216,13 +217,4 @@ export function createEntryScript(opts: {
   let script = luaScriptConcat.concat();
   luaScriptConcat.finish();
   return script;
-}
-
-function mkDirP(...args) {
-  args.forEach(arg => {
-    let toCreate = path.isAbsolute(arg) ? arg : arg;
-    if (!fs.existsSync(toCreate)) {
-      fs.mkdirSync(toCreate);
-    }
-  });
 }
