@@ -11,7 +11,7 @@ export const DEFAULT_MODULE_PREFIX =
 local modules = {}
 
 local function resolvePath(path)
-  return path
+  return path:gsub('%.lua$', '')
 end
 
 local function registerModule(path, moduleFunction)
