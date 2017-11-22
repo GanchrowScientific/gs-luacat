@@ -60,7 +60,10 @@ export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatO
     let inAuxiliaryOnlySection = false;
     scriptByLines.forEach(line => {
       if (this.isInclude(line)) {
-        line = line.replace(/require\('(.*)'\)/, `require('${path.normalize(this.inDir)}/$1')`);
+        line = line.replace(/require\('(.*)'\)/, (a, b) => {
+          b = `${this.inDir}/${b}`;
+          return `require('${path.normalize(b)}')`;
+        });
       }
       if (this.isIgnoreBegin(line)) {
         ignoring = true;
