@@ -24,7 +24,6 @@ export interface LuaScriptConcatOptions {
 
 export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatOptions> extends PrivateEventEmitter {
   private inFile: string;
-  private curDir: string;
   private inDir: string;
   private moduleWrapper: ModuleWrapper;
   private originalScript: string;
@@ -37,11 +36,9 @@ export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatO
 
   constructor(config: C, includedFiles = new Set()) {
     super();
-    this.curDir = process.cwd();
     this.inFile = config.inFile;
     this.inDir = path.dirname(this.inFile);
     this.moduleWrapper = config.moduleWrapper || new ModuleWrapper();
-    process.chdir(this.inDir);
     this.originalScript = fs.readFileSync(this.inFile, 'utf8');
     this.outFile = config.outFile;
     this.concatStyle = config.concatStyle;
@@ -126,10 +123,7 @@ export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatO
     return `./${moduleDir[0]}/${moduleDir[1]}/${fileName}`;
   }
 
-  private reset() {
-    process.chdir(this.curDir);
-  }
-
+  private reset() { /**/ }
 
   private writeUnit() {
     if (this.concatStyle === CONCAT_STYLE.unit) {
