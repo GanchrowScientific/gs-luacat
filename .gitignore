@@ -1,6 +1,7 @@
 *.map
 *.swp
-lib/*.js
+*.js
+!luacat.js
 .syntastic*
 build
 *.node
