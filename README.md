@@ -2,10 +2,12 @@ A lua script concatenator to provide convention require resolution for embedded 
 
 # Installation
 
-    npm install -D gs-luacat
+```bash
+npm install -D gs-luacat
+```
 
 # Usage
 
 ```bash
-  luacat <inDir> <outDir>
+luacat <inDir> <outDir>
 ```
