@@ -1,4 +1,4 @@
-A lua script concatenator to provide convention require resolution for embedded redis lua scripts
+A lua script concatenator to provide conventional require resolution for embedded redis lua scripts
 
 # Installation
 
