@@ -1,8 +1,9 @@
 {
   "name": "gs-luacat",
   "description": "Concatenate lua scripts (For Redis).",
+  "keywords": ["linker", "lua", "system", "concat", "require"],
   "repository": "https://github.com/GanchrowScientific/gs-luacat.git",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "main": "./lib/index.js",
   "typings": "./lib/index.d.ts",
   "dependencies": {
