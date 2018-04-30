@@ -1,18 +1,20 @@
-/* Copyright © 2017 Ganchrow Scientific, SA all rights reserved */
+/* Copyright © 2017-2018 Ganchrow Scientific, SA all rights reserved */
 'use strict';
 
 // include this line to fix stack traces
 import 'source-map-support/register';
 
-import * as nodeunit from 'nodeunit';
-
 import * as fs from 'fs';
+
+import 'jasmine';
+
+import {testWrapper, JasmineExpectation} from 'gs-utils/lib/jasmineTestWrapper';
 
 import * as luaCat from '../src/luaCat';
 import {ModuleWrapper} from '../src/moduleWrapper';
 
-module.exports = {
-  testConcat(test: nodeunit.Test) {
+const MODULE = {
+  testConcat(test: JasmineExpectation) {
     luaCat.concatDirectory({
       inDir: `${__dirname}/resources`,
       outDir: `${__dirname}/resources-out`,
@@ -39,3 +41,5 @@ module.exports = {
     test.done();
   }
 };
+
+testWrapper.run(MODULE, expect, 'Concat Integration Test');

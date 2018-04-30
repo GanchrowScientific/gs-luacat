@@ -13,8 +13,8 @@ echo Copying test resources to target folder
 rm -rf target/dist/integration-test/resources
 cp -r integration-test/resources target/dist/integration-test/
 
-NODEUNIT="node_modules/.bin/nodeunit"
-NUOPTS="--reporter junit --output target/test-reports"
+JASMINE="node_modules/jasmine-xml-reporter/bin/jasmine.js"
+JAOPTS="--junitreport --output=target/test-reports"
 TESTDIR="target/dist/test"
 INTTESTDIR="target/dist/integration-test"
 ALL_RESULTS=0
@@ -26,11 +26,11 @@ runTests() {
   for f in $(find $1 -type f -name '*.test.js');
   do
     echo "TEST: $f";
-    $NODE $NODEUNIT $NUOPTS $f;
+    $JASMINE $JAOPTS $f
     RESULT=$?
 
-    TEST_FILE="target/test-reports/`echo $f | sed 's/.*\///'`.xml"
-    if [[ ! -s "$TEST_FILE" || "$RESULT" -ne 0 ]]; then
+    mv target/test-reports/results.xml target/test-reports/`basename $f`.xml
+    if [[ "$RESULT" -ne 0 ]]; then
       (( ALL_RESULTS += RESULT ))
       ERROR_MESSAGE+="+ $f\n"
       ((FAILURES++))

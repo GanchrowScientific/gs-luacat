@@ -1,12 +1,16 @@
-/* Copyright © 2017 Ganchrow Scientific, SA all rights reserved */
+/* Copyright © 2017-2018 Ganchrow Scientific, SA all rights reserved */
 
 'use strict';
 
-import * as nodeunit from 'nodeunit';
+import 'jasmine';
 
-module.exports = {
-  testOk(test: nodeunit.Test) {
+import {testWrapper, JasmineExpectation} from 'gs-utils/lib/jasmineTestWrapper';
+
+const MODULE = {
+  testOk(test: JasmineExpectation) {
     test.ok(true);
     test.done();
   }
 };
+
+testWrapper.run(MODULE, expect, 'index');
