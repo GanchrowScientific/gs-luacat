@@ -35,7 +35,7 @@ export class LuaScriptConcat<C extends LuaScriptConcatOptions = LuaScriptConcatO
   private currentScript: string[] = [];
   private finishedScript = '';
 
-  constructor(config: C, includedFiles = new Set()) {
+  constructor(config: C, includedFiles: Set<string> = new Set()) {
     super();
     this.inFile = config.inFile;
     this.inDir = path.dirname(this.inFile);
